@@ -68,4 +68,9 @@ public class DrivetrainIOReal extends SwerveDrivetrain<TalonFX, TalonFX, CANcode
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired) {
         return new RunCommand(() -> this.setControl(requestSupplier.get()), subsystemRequired);
     }
+
+    @Override
+    public TalonFX getDriveMotor() {
+        return super.getModule(0).getDriveMotor();
+    }
 }

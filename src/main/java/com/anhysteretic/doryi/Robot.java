@@ -12,6 +12,15 @@ import com.anhysteretic.doryi.constants.NikeTunerConstants;
 import com.anhysteretic.doryi.drive.Drivetrain;
 import com.anhysteretic.doryi.drive.DrivetrainIO;
 import com.anhysteretic.doryi.drive.DrivetrainIOReal;
+import com.anhysteretic.doryi.escalator.Escalator;
+import com.anhysteretic.doryi.escalator.EscalatorIO;
+import com.anhysteretic.doryi.escalator.EscalatorIOKraken;
+import com.anhysteretic.doryi.flapSystem.FlapSystem;
+import com.anhysteretic.doryi.flapSystem.FlapSystemIO;
+import com.anhysteretic.doryi.flapSystem.FlapSystemIOKraken;
+import com.anhysteretic.doryi.shooter.Shooter;
+import com.anhysteretic.doryi.shooter.ShooterIO;
+import com.anhysteretic.doryi.shooter.ShooterIOKraken;
 import edu.wpi.first.wpilibj.Timer;
 
 import org.littletonrobotics.junction.LogFileUtil;
@@ -35,13 +44,22 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends LoggedRobot {
     private Command m_autonomousCommand;
 
-//    private final SendableChooser<Command> autoChooser;
+    private final SendableChooser<Command> autoChooser;
 
     public final DrivetrainIO drivetrainIO;
     public final Drivetrain drivetrain;
 
     public final VisionIO visionIO;
     public final Vision vision;
+
+    public final EscalatorIO escalatorIO;
+    public final Escalator escalator;
+
+    public final ShooterIO shooterIO;
+    public final Shooter shooter;
+
+    public final FlapSystemIO flapSystemIO;
+    public final FlapSystem flapSystem;
 
     public final Control control;
 
@@ -106,12 +124,21 @@ public class Robot extends LoggedRobot {
                 this.visionIO = new VisionIOLimelights();
                 this.vision = new Vision(visionIO, drivetrain);
 
-                this.control = new Control(drivetrainIO, drivetrain, visionIO, vision);
+                this.escalatorIO = new EscalatorIOKraken();
+                this.escalator = new Escalator(escalatorIO);
+
+                this.shooterIO = new ShooterIOKraken();
+                this.shooter = new Shooter(shooterIO);
+
+                this.flapSystemIO = new FlapSystemIOKraken();
+                this.flapSystem = new FlapSystem(flapSystemIO);
+
+                this.control = new Control(drivetrain, vision, escalator, shooter, flapSystem);
             }
         }
 
-//        autoChooser = AutoBuilder.buildAutoChooser();
-//        SmartDashboard.putData("Auto Chooser", autoChooser);
+        autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData("Auto Chooser", autoChooser);
 
         SignalLogger.enableAutoLogging(false);
         Logger.start();
@@ -139,8 +166,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
-//        m_autonomousCommand = autoChooser.getSelected();
-        m_autonomousCommand = null;
+        m_autonomousCommand = autoChooser.getSelected();
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.schedule();

@@ -1,5 +1,6 @@
 package com.anhysteretic.doryi.drive;
 
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.Matrix;
@@ -48,4 +49,6 @@ public interface DrivetrainIO {
     void setOperatorPerspectiveForward(Rotation2d fieldDirection);
 
     void pointModulesAtAngle();
+
+    TalonFX getDriveMotor();
 }

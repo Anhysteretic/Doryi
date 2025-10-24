@@ -14,15 +14,30 @@ import edu.wpi.first.units.measure.*;
 // https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
 public class DoryTunerConstants {
 
+//    private static final Slot0Configs steerGains = new Slot0Configs()
+//            .withKP(0)
+//            .withKI(0)
+//            .withKD(0)
+//            .withKS(1)
+//            .withKV(2)
+//            .withKA(0)
+//            .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign);
     private static final Slot0Configs steerGains = new Slot0Configs()
-            .withKP(0)
+            .withKP(100)
             .withKI(0)
-            .withKD(0)
-            .withKS(0)
-            .withKV(0.075)
+            .withKD(0.5)
+            .withKS(0.1)
+            .withKV(0)
             .withKA(0)
             .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign);
-    private static final Slot0Configs driveGains = new Slot0Configs().withKP(0.4).withKI(0).withKD(0).withKS(0).withKV(0.129).withKA(0).withStaticFeedforwardSign(StaticFeedforwardSignValue.UseVelocitySign);
+    private static final Slot0Configs driveGains = new Slot0Configs()
+            .withKP(10)
+            .withKI(0)
+            .withKD(0)
+            .withKS(1.5)
+            .withKV(0)
+            .withKA(0)
+            .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseVelocitySign);
 
 
     // The closed-loop output type to use for the steer motors;
@@ -30,7 +45,7 @@ public class DoryTunerConstants {
     private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
     // The closed-loop output type to use for the drive motors;
     // This affects the PID/FF gains for the drive motors
-    private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.Voltage;
+    private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
 
     // The type of motor used for the drive motor
     private static final DriveMotorArrangement kDriveMotorType = DriveMotorArrangement.TalonFX_Integrated;
@@ -64,7 +79,7 @@ public class DoryTunerConstants {
 
     // Theoretical free speed (m/s) at 12 V applied output;
     // This needs to be tuned to your individual robot
-    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(4.7);
+    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(4.2);
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
