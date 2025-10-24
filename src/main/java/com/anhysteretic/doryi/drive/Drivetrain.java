@@ -55,12 +55,12 @@ public class Drivetrain extends SubsystemBase {
                 .withSteerRequestType(SwerveModule.SteerRequestType.Position);
 
     public ProfiledPIDController vxController = new ProfiledPIDController(
-            10.5, 0.01, 0.1, new TrapezoidProfile.Constraints(
-            4.25, 1.9) // max velocity, max acceleration
+            7.5, 0.001, 0.001, new TrapezoidProfile.Constraints(
+            4.25, 2.4) // max velocity, max acceleration
     );
     public ProfiledPIDController vyController = new ProfiledPIDController(
-            10.5, 0.01, 0.1, new TrapezoidProfile.Constraints(
-            4.25, 1.9) // max velocity, max acceleration
+            7.5, 0.001, 0.001, new TrapezoidProfile.Constraints(
+            4.25, 2.4) // max velocity, max acceleration
     );
 
     public Drivetrain(DrivetrainIO io) {
@@ -69,7 +69,7 @@ public class Drivetrain extends SubsystemBase {
         this.vxController.setTolerance(Units.inchesToMeters(0.5));
         this.vyController.setTolerance(Units.inchesToMeters(0.5));
 
-        driveHeading.HeadingController.setPID(34.459, 0, 2.5039);
+        driveHeading.HeadingController.setPID(27, 0, 0);
         driveHeading.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
         driveHeading.HeadingController.setTolerance(0.1, 0.1);
     }
@@ -187,9 +187,9 @@ public class Drivetrain extends SubsystemBase {
                     (speeds, feedforwards) -> io.setControl(
                             driveChassisSpeeds.withSpeeds(speeds).withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons()).withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())), new PPHolonomicDriveController(
                             // PID constants for translation
-                            new PIDConstants(6.0, 0, 0),
+                            new PIDConstants(0.6, 0, 0),
                             // PID constants for rotation
-                            new PIDConstants(5.0, 0, 0)), config,
+                            new PIDConstants(2.75, 0, 0)), config,
                     // Assume the path needs to be flipped for Red vs Blue, this is normally the case
                     () -> DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red, this // Subsystem for requirements
             );
