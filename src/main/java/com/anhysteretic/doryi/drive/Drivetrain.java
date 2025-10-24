@@ -69,7 +69,7 @@ public class Drivetrain extends SubsystemBase {
         this.vxController.setTolerance(Units.inchesToMeters(0.5));
         this.vyController.setTolerance(Units.inchesToMeters(0.5));
 
-        driveHeading.HeadingController.setPID(27, 0, 0);
+        driveHeading.HeadingController.setPID(35, 0, 0.2);
         driveHeading.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
         driveHeading.HeadingController.setTolerance(0.1, 0.1);
     }
