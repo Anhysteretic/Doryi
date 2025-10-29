@@ -238,6 +238,7 @@ public class Control {
 
     /**
      * Sequences intaking that runs shooter, passive holds down the elevator, and stops when we have a coral.
+     *
      * @return Command
      */
     public Command Intake() {
@@ -255,93 +256,104 @@ public class Control {
         );
     }
 
-    final double alpha = 1; // 0..1, smoothing (1.0 = no smoothing)
-
     /**
      * Pose to Pose autoAlign command that will drive to the closest scoring command.
      * It is two ProfiledPIDControllers, one for X and one for Y, that will close the robot pose to the target pose
      * We use SwerveRequest.FieldCentricFacingAngle so that we do not have to deal with rotation
      * First we wait for the headingController to point the robot at the right direction before moving.
      * This deals with issues of profiling turning with vx and vy which is not a simple control.
+     *
      * @return AutoAlign Command
      */
-    public Command AutoSnapInline(){
+    public Command AutoSnapInline() {
         AtomicReference<Pose2d> target = new AtomicReference<>();
 
         AtomicReference<Vector<N2>> prevSpeeds = new AtomicReference<>(VecBuilder.fill(0, 0));
 
-        return Commands.runOnce(
-                // Sets everything up, reset the controllers because we have a non-zero kI
-                () -> {
+        return Commands.sequence(
+                Commands.runOnce(
+                        // Sets everything up, reset the controllers because we have a non-zero kI
+                        () -> {
 
-                    target.set(drivetrain.getPoseToScore(this.drivetrain.getAngleToReefPolar()));
+                            target.set(drivetrain.getPoseToScore(this.drivetrain.getAngleToReefPolar()));
 
-                    ChassisSpeeds drivetrainSpeeds = this.drivetrain.getChassisSpeeds();
-                    Translation2d d = target.get().getTranslation().minus(this.drivetrain.getPose().getTranslation());
-                    if (drivetrainSpeeds.vxMetersPerSecond == 0 && drivetrainSpeeds.vyMetersPerSecond == 0){
-                        drivetrain.snapController.reset(target.get().getTranslation().minus(drivetrain.getPose().getTranslation()).getNorm());
-                    } else if (d.getNorm() < 1e-9){
-                        this.drivetrain.snapController.reset(0);
-                    } else {
-                        drivetrainSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(drivetrainSpeeds, drivetrain.getPose().getRotation());
-                        Translation2d v = new Translation2d(drivetrainSpeeds.vxMetersPerSecond, drivetrainSpeeds.vyMetersPerSecond);
-                        Vector<N2> projection = v.toVector().projection(d.toVector());
-                        this.drivetrain.snapController.reset(
-                                target.get().getTranslation().minus(drivetrain.getPose().getTranslation()).getNorm(),
-                                -projection.norm()
-                        );
-                    }
+                            drivetrain.driveHeading.HeadingController.reset();
 
-                    drivetrain.driveHeading.HeadingController.reset();
+                            prevSpeeds.set(VecBuilder.fill(0, 0));
 
-                    prevSpeeds.set(VecBuilder.fill(0, 0));
+                            //                    drivetrain.setControl(drivetrain.driveChassisSpeeds.withSpeeds(drivetrainSpeeds));
 
-//                    drivetrain.setControl(drivetrain.driveChassisSpeeds.withSpeeds(drivetrainSpeeds));
-
-                    Logger.recordOutput("AutoSnap/PoseTarget", target.get());
-                }
-        ).andThen(
+                            Logger.recordOutput("AutoSnap/PoseTarget", target.get());
+                        }
+                ),
                 Commands.run(
-                            () -> {
-                                Translation2d d = target.get().getTranslation().minus(this.drivetrain.getPose().getTranslation());
-                                double dNorm = d.getNorm();
-
-                                if (dNorm < 1e-6) {
-                                    drivetrain.setControl(drivetrain.driveChassisSpeeds.withSpeeds(new ChassisSpeeds()));
-                                }
-
-                                double speed = -(drivetrain.snapController.calculate(dNorm, 0)
-                                        - drivetrain.snapController.getSetpoint().velocity);
-
-                                Vector<N2> dir = d.toVector().unit();
-                                Vector<N2> cmd = dir.times(speed);
-
-                                Vector<N2> smoothed = prevSpeeds.get().times(1 - alpha).plus(cmd.times(alpha));
-                                this.drivetrain.setControl(
-                                        this.drivetrain.driveHeading
-                                                .withVelocityY(smoothed.get(1))
-                                                .withVelocityX(smoothed.get(0))
-                                                .withTargetDirection(target.get().getRotation())
+                        // Points the drivetrain in the right direction
+                        () -> this.drivetrain.setControl(
+                                drivetrain.driveHeading.withTargetDirection(target.get().getRotation()))
+                ).until(
+                        // Wait until we are facing the right direction
+                        this.drivetrain.driveHeading.HeadingController::atSetpoint
+                ),
+                Commands.runOnce(
+                        () -> {
+                            ChassisSpeeds drivetrainSpeeds = this.drivetrain.getChassisSpeeds();
+                            Translation2d d = target.get().getTranslation().minus(this.drivetrain.getPose().getTranslation());
+                            if (drivetrainSpeeds.vxMetersPerSecond == 0 && drivetrainSpeeds.vyMetersPerSecond == 0) {
+                                drivetrain.snapController.reset(target.get().getTranslation().minus(drivetrain.getPose().getTranslation()).getNorm());
+                            } else if (d.getNorm() < 1e-9) {
+                                this.drivetrain.snapController.reset(0);
+                            } else {
+                                drivetrainSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(drivetrainSpeeds, drivetrain.getPose().getRotation());
+                                Translation2d v = new Translation2d(drivetrainSpeeds.vxMetersPerSecond, drivetrainSpeeds.vyMetersPerSecond);
+                                Vector<N2> projection = v.toVector().projection(d.toVector());
+                                this.drivetrain.snapController.reset(
+                                        target.get().getTranslation().minus(drivetrain.getPose().getTranslation()).getNorm(),
+                                        -projection.norm()
                                 );
-
-                                prevSpeeds.set(smoothed);
-
-                                if (RC.robotType == RC.RunType.DEV){
-                                    Logger.recordOutput("AutoSnap/dNorm", dNorm);
-                                    Logger.recordOutput("AutoSnap/OutputSpeed", speed);
-                                    Logger.recordOutput("AutoSnap/newSpeedsX", smoothed.get(0));
-                                    Logger.recordOutput("AutoSnap/newSpeedsY", smoothed.get(1));
-                                    Logger.recordOutput("AutoSnap/snapController", drivetrain.snapController.atSetpoint());
-                                    Logger.recordOutput("AutoSnap/headingController", drivetrain.driveHeading.HeadingController.atSetpoint());
-                                }
                             }
-                    ).until(
-                            () -> (drivetrain.snapController.atGoal() && drivetrain.driveHeading.HeadingController.atSetpoint())
-                    ).finallyDo(
-                            () -> this.drivetrain.setControl(
-                                    this.drivetrain.driveChassisSpeeds.withSpeeds(new ChassisSpeeds()))
-                    )
-                );
+                        }
+                ),
+                Commands.run(
+                        () -> {
+                            Translation2d d = target.get().getTranslation().minus(this.drivetrain.getPose().getTranslation());
+                            double dNorm = d.getNorm();
+
+                            if (dNorm < 1e-6) {
+                                drivetrain.setControl(drivetrain.driveChassisSpeeds.withSpeeds(new ChassisSpeeds()));
+                            }
+
+                            double speed = -(drivetrain.snapController.calculate(dNorm, 0)
+                                    - drivetrain.snapController.getSetpoint().velocity);
+
+                            Vector<N2> dir = d.toVector().unit();
+                            Vector<N2> cmd = dir.times(speed);
+
+                            Vector<N2> smoothed = cmd;
+                            this.drivetrain.setControl(
+                                    this.drivetrain.driveHeading
+                                            .withVelocityY(smoothed.get(1))
+                                            .withVelocityX(smoothed.get(0))
+                                            .withTargetDirection(target.get().getRotation())
+                            );
+
+                            prevSpeeds.set(smoothed);
+
+                            if (RC.robotType == RC.RunType.DEV) {
+                                Logger.recordOutput("AutoSnap/dNorm", dNorm);
+                                Logger.recordOutput("AutoSnap/OutputSpeed", speed);
+                                Logger.recordOutput("AutoSnap/newSpeedsX", smoothed.get(0));
+                                Logger.recordOutput("AutoSnap/newSpeedsY", smoothed.get(1));
+                                Logger.recordOutput("AutoSnap/snapController", drivetrain.snapController.atSetpoint());
+                                Logger.recordOutput("AutoSnap/headingController", drivetrain.driveHeading.HeadingController.atSetpoint());
+                            }
+                        }
+                ).until(
+                        () -> (drivetrain.snapController.atGoal() && drivetrain.driveHeading.HeadingController.atSetpoint())
+                ).finallyDo(
+                        () -> this.drivetrain.setControl(
+                                this.drivetrain.driveChassisSpeeds.withSpeeds(new ChassisSpeeds()))
+                )
+        );
     }
 
     private void configureBindings() {

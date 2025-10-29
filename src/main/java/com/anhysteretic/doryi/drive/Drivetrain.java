@@ -57,8 +57,8 @@ public class Drivetrain extends SubsystemBase {
                     .withDesaturateWheelSpeeds(false);
 
     public ProfiledPIDController snapController = new ProfiledPIDController(
-            3, 0, 0, new TrapezoidProfile.Constraints(
-            4.25, 1.5) // max velocity, max acceleration
+            5, 0.01, 0.01, new TrapezoidProfile.Constraints(
+            4.25, 1.25) // max velocity, max acceleration
     );
 
     public Drivetrain(DrivetrainIO io) {
@@ -66,7 +66,7 @@ public class Drivetrain extends SubsystemBase {
 
         this.snapController.setTolerance(Units.inchesToMeters(0.5));
 
-        driveHeading.HeadingController.setPID(3.0, 0, 0);
+        driveHeading.HeadingController.setPID(10, 0, 0);
         driveHeading.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
         driveHeading.HeadingController.setTolerance(0.1, 0.1);
     }
@@ -102,6 +102,7 @@ public class Drivetrain extends SubsystemBase {
 
                 Logger.recordOutput("Drivetrain/HeadingControllerSetpoint", this.driveHeading.HeadingController.getSetpoint());
                 Logger.recordOutput("Drivetrain/HeadingControllerPosition", this.getPose().getRotation().getRadians());
+                Logger.recordOutput("Drivetrain/HeadingControllerAtSetpoint", this.driveHeading.HeadingController.atSetpoint());
             }
         }
     }
