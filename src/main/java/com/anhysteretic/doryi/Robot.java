@@ -143,7 +143,7 @@ public class Robot extends LoggedRobot {
         SignalLogger.enableAutoLogging(false);
         Logger.start();
 
-        Threads.setCurrentThreadPriority(true, 5);
+        Threads.setCurrentThreadPriority(true, 2);
     }
 
     @Override

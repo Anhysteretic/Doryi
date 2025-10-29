@@ -52,24 +52,21 @@ public class Drivetrain extends SubsystemBase {
     public final SwerveRequest.FieldCentricFacingAngle driveHeading =
             new SwerveRequest.FieldCentricFacingAngle()
                 .withDriveRequestType(SwerveModule.DriveRequestType.Velocity)
-                .withSteerRequestType(SwerveModule.SteerRequestType.Position);
+                .withSteerRequestType(SwerveModule.SteerRequestType.Position)
+                    .withForwardPerspective(SwerveRequest.ForwardPerspectiveValue.BlueAlliance)
+                    .withDesaturateWheelSpeeds(false);
 
-    public ProfiledPIDController vxController = new ProfiledPIDController(
-            7.5, 0.001, 0.001, new TrapezoidProfile.Constraints(
-            4.25, 2.4) // max velocity, max acceleration
-    );
-    public ProfiledPIDController vyController = new ProfiledPIDController(
-            7.5, 0.001, 0.001, new TrapezoidProfile.Constraints(
-            4.25, 2.4) // max velocity, max acceleration
+    public ProfiledPIDController snapController = new ProfiledPIDController(
+            3, 0, 0, new TrapezoidProfile.Constraints(
+            4.25, 1.5) // max velocity, max acceleration
     );
 
     public Drivetrain(DrivetrainIO io) {
         this.io = io;
 
-        this.vxController.setTolerance(Units.inchesToMeters(0.5));
-        this.vyController.setTolerance(Units.inchesToMeters(0.5));
+        this.snapController.setTolerance(Units.inchesToMeters(0.5));
 
-        driveHeading.HeadingController.setPID(35, 0, 0.2);
+        driveHeading.HeadingController.setPID(3.0, 0, 0);
         driveHeading.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
         driveHeading.HeadingController.setTolerance(0.1, 0.1);
     }
@@ -99,6 +96,12 @@ public class Drivetrain extends SubsystemBase {
 
                 Logger.recordOutput("Drivetrain/Current", io.getDriveMotor().getTorqueCurrent().getValue());
                 Logger.recordOutput("Drivetrain/MotorKT", io.getDriveMotor().getMotorKT().getValue());
+
+                ChassisSpeeds fieldCentric = ChassisSpeeds.fromRobotRelativeSpeeds(getChassisSpeeds(), getPose().getRotation());
+                Logger.recordOutput("Drivetrain/SpeedMag", Math.hypot(fieldCentric.vxMetersPerSecond, fieldCentric.vyMetersPerSecond));
+
+                Logger.recordOutput("Drivetrain/HeadingControllerSetpoint", this.driveHeading.HeadingController.getSetpoint());
+                Logger.recordOutput("Drivetrain/HeadingControllerPosition", this.getPose().getRotation().getRadians());
             }
         }
     }
