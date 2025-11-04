@@ -9,6 +9,7 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -61,6 +62,9 @@ public class Drivetrain extends SubsystemBase {
             4.25, 1.25) // max velocity, max acceleration
     );
 
+    public PIDController rotationController = new PIDController(
+            0.5, 0, 0.); // max velocity, max acceleration
+
     public Drivetrain(DrivetrainIO io) {
         this.io = io;
 
@@ -69,6 +73,9 @@ public class Drivetrain extends SubsystemBase {
         driveHeading.HeadingController.setPID(10, 0, 0);
         driveHeading.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
         driveHeading.HeadingController.setTolerance(0.1, 0.1);
+
+        rotationController.setTolerance(0.1);
+        rotationController.enableContinuousInput(-Math.PI, Math.PI);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.anhysteretic.doryi.constants.DoryTunerConstants;
 import com.anhysteretic.doryi.constants.NikeTunerConstants;
 import com.anhysteretic.doryi.constants.RC;
 import com.anhysteretic.doryi.constants.SC;
+import com.anhysteretic.doryi.drive.AutoSnap;
 import com.anhysteretic.doryi.drive.Drivetrain;
 import com.anhysteretic.doryi.escalator.Escalator;
 import com.anhysteretic.doryi.escalator.MoveCommand;
@@ -59,6 +60,8 @@ public class Control {
 
     public final Command intake;
 
+    public final AutoSnap autoSnap;
+
     public Control(Drivetrain drivetrain, Vision vision, Escalator escalator, Shooter shooter, FlapSystem flapSystem) {
         this.drivetrain = drivetrain;
         this.vision = vision;
@@ -69,6 +72,8 @@ public class Control {
         if (!AutoBuilder.isConfigured()) {
             drivetrain.configureAutoBuilder();
         }
+
+        this.autoSnap = new AutoSnap(drivetrain);
 
 
         NamedCommands.registerCommand("L2", new SequentialCommandGroup(
@@ -124,7 +129,8 @@ public class Control {
                         .finallyDo(flapSystem::stopFlapper));
 
         this.snapScoreL4 = new SequentialCommandGroup(
-                AutoSnapInline(),
+                new InstantCommand(autoSnap::reTarget),
+                autoSnap,
                 new MoveCommand(
                         this.escalator,
                         Escalator.Position.L4,
